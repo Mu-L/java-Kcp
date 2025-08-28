@@ -151,27 +151,27 @@ public class Kcp implements IKcp {
     /**探测等待**/
     private int probeWait;
     /**死连接 重传达到该值时认为连接是断开的**/
-    private int deadLink = IKCP_DEADLINK;
+    private final int deadLink = IKCP_DEADLINK;
     /**拥塞控制增量**/
     private int incr;
     /**收到包立即回ack**/
     private boolean ackNoDelay;
 
     /**待发送窗口窗口**/
-    private LinkedList<Segment> sndQueue = new LinkedList<>();
+    private final LinkedList<Segment> sndQueue = new LinkedList<>();
     /**发送后待确认的队列**/
-    private ReItrLinkedList<Segment> sndBuf = new ReItrLinkedList<>();
+    private final ReItrLinkedList<Segment> sndBuf = new ReItrLinkedList<>();
 
     /**收到后有序的队列**/
-    private ReItrLinkedList<Segment> rcvQueue = new ReItrLinkedList<>();
+    private final ReItrLinkedList<Segment> rcvQueue = new ReItrLinkedList<>();
     /**收到的消息 无序的**/
-    private ReItrLinkedList<Segment> rcvBuf = new ReItrLinkedList<>();
+    private final ReItrLinkedList<Segment> rcvBuf = new ReItrLinkedList<>();
 
-    private ReusableListIterator<Segment> rcvQueueItr = rcvQueue.listIterator();
+    private final ReusableListIterator<Segment> rcvQueueItr = rcvQueue.listIterator();
 
     public ReusableListIterator<Segment> sndBufItr = sndBuf.listIterator();
 
-    private ReusableListIterator<Segment> rcvBufItr = rcvBuf.listIterator();
+    private final ReusableListIterator<Segment> rcvBufItr = rcvBuf.listIterator();
 
     private long[] acklist = new long[8];
 
@@ -283,10 +283,7 @@ public class Kcp implements IKcp {
         }
 
 
-        boolean recover = false;
-        if (rcvQueue.size() >= rcvWnd) {
-            recover = true;
-        }
+        boolean recover = rcvQueue.size() >= rcvWnd;
         ByteBuf byteBuf = null;
 
         // merge fragment
@@ -350,10 +347,7 @@ public class Kcp implements IKcp {
             return -2;
         }
         //接收队列长度大于接收窗口？比如接收窗口是32个包，目前已经满32个包了，需要在恢复的时候告诉对方
-        boolean recover = false;
-        if (rcvQueue.size() >= rcvWnd) {
-            recover = true;
-        }
+        boolean recover = rcvQueue.size() >= rcvWnd;
 
         // merge fragment
         int len = 0;
@@ -440,11 +434,8 @@ public class Kcp implements IKcp {
             return true;
         }
 
-        if (rcvQueue.size() < seg.frg + 1) { // Some segments have not arrived yet
-            return false;
-        }
-
-        return true;
+        // Some segments have not arrived yet
+        return rcvQueue.size() >= seg.frg + 1;
     }
 
 
@@ -597,7 +588,7 @@ public class Kcp implements IKcp {
             if(index>=ackMaskSize) {
                 break;
             }
-            long mask = ackMask&1<<index;
+            long mask = ackMask& 1L <<index;
             if(mask!=0){
                 itr.remove();
                 seg.recycle(true);
@@ -933,7 +924,7 @@ public class Kcp implements IKcp {
 
 
 
-    private  long startTicks = System.currentTimeMillis();
+    private final long startTicks = System.currentTimeMillis();
 
     @Override
     public long currentMs(long now)
@@ -983,7 +974,7 @@ public class Kcp implements IKcp {
                 break;
             }
             if(index>=0){
-                ackMask|=1<<index;
+                ackMask|= 1L <<index;
             }
         }
 
@@ -1321,10 +1312,7 @@ public class Kcp implements IKcp {
         if (sndBuf.size() > 0) {
             return true;
         }
-        if (sndQueue.size() > 0) {
-            return true;
-        }
-        return false;
+        return sndQueue.size() > 0;
     }
 
 
