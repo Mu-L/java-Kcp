@@ -15,14 +15,17 @@ public class KcpIdleExampleClient implements KcpListener {
 
     public static void main(String[] args) {
 
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
-        channelConfig.setAckNoDelay(false);
+        kcpConfig.setAckNoDelay(false);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
+
         channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
 

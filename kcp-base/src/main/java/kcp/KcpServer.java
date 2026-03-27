@@ -71,7 +71,7 @@ public class KcpServer {
 
         boolean epoll = Epoll.isAvailable();
         boolean kqueue = KQueue.isAvailable();
-        this.iMessageExecutorPool = channelConfig.getiMessageExecutorPool();
+        this.iMessageExecutorPool = channelConfig.getMessageExecutorPool();
         bootstrap = new Bootstrap();
         int cpuNum = Runtime.getRuntime().availableProcessors();
         int bindTimes = 1;

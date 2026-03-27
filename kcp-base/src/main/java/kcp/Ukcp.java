@@ -75,24 +75,27 @@ public class Ukcp{
      *
      * @param output output for kcp
      */
-    public Ukcp(KcpOutput output, KcpListener kcpListener, IMessageExecutor iMessageExecutor,  ChannelConfig channelConfig, IChannelManager channelManager) {
+    public Ukcp(KcpOutput output, KcpListener kcpListener, IMessageExecutor iMessageExecutor,  ChannelConfig channelConfig,
+                IChannelManager channelManager) {
+        KcpConfig kcpConfig = channelConfig.getKcpConfig();
         this.timeoutMillis = channelConfig.getTimeoutMillis();
-        this.kcp = new Kcp(channelConfig.getConv(), output);
+        this.kcp = new Kcp(kcpConfig.getConv(), output);
         this.active = true;
         this.kcpListener = kcpListener;
         this.iMessageExecutor = iMessageExecutor;
         this.channelManager = channelManager;
         this.writeBuffer = new MpscLinkedQueue<>();
         this.readBuffer = new MpscLinkedQueue<>();
+        this.fastFlush = channelConfig.isFastFlush();
 
         if(channelConfig.getReadBufferSize()!=-1){
             this.controlReadBufferSize = true;
-            this.readBufferIncr.set(channelConfig.getReadBufferSize()/channelConfig.getMtu());
+            this.readBufferIncr.set(channelConfig.getReadBufferSize()/kcpConfig.getMtu());
         }
 
         if(channelConfig.getWriteBufferSize()!=-1){
             this.controlWriteBufferSize = true;
-            this.writeBufferIncr.set(channelConfig.getWriteBufferSize()/channelConfig.getMtu());
+            this.writeBufferIncr.set(channelConfig.getWriteBufferSize()/kcpConfig.getMtu());
         }
 
 
@@ -106,27 +109,26 @@ public class Ukcp{
         //init fec
         if (fecAdapt != null) {
             KcpOutput kcpOutput = kcp.getOutput();
-            fecEncode = fecAdapt.fecEncode(headerSize,channelConfig.getMtu());
-            fecDecode = fecAdapt.fecDecode(channelConfig.getMtu());
+            fecEncode = fecAdapt.fecEncode(headerSize,kcpConfig.getMtu());
+            fecDecode = fecAdapt.fecDecode(kcpConfig.getMtu());
             kcpOutput = new FecOutPut(kcpOutput, fecEncode);
             kcp.setOutput(kcpOutput);
             headerSize+= Fec.fecHeaderSizePlus2;
         }
 
         kcp.setReserved(headerSize);
-        initKcpConfig(channelConfig);
+        initKcpConfig(kcpConfig);
     }
 
 
-    private void initKcpConfig(ChannelConfig channelConfig){
-        kcp.nodelay(channelConfig.isNodelay(),channelConfig.getInterval(),channelConfig.getFastresend(),channelConfig.isNocwnd());
-        kcp.setSndWnd(channelConfig.getSndwnd());
-        kcp.setRcvWnd(channelConfig.getRcvwnd());
-        kcp.setMtu(channelConfig.getMtu());
-        kcp.setStream(channelConfig.isStream());
-        kcp.setAckNoDelay(channelConfig.isAckNoDelay());
-        kcp.setAckMaskSize(channelConfig.getAckMaskSize());
-        this.fastFlush = channelConfig.isFastFlush();
+    private void initKcpConfig(KcpConfig kcpConfig) {
+        kcp.nodelay(kcpConfig.isNodelay(),kcpConfig.getInterval(),kcpConfig.getFastresend(),kcpConfig.isNocwnd());
+        kcp.setSndWnd(kcpConfig.getSndwnd());
+        kcp.setRcvWnd(kcpConfig.getRcvwnd());
+        kcp.setMtu(kcpConfig.getMtu());
+        kcp.setStream(kcpConfig.isStream());
+        kcp.setAckNoDelay(kcpConfig.isAckNoDelay());
+        kcp.setAckMaskSize(kcpConfig.getAckMaskSize());
     }
 
 

@@ -2,10 +2,7 @@ package test;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import kcp.ChannelConfig;
-import kcp.KcpClient;
-import kcp.KcpListener;
-import kcp.Ukcp;
+import kcp.*;
 
 import java.net.InetSocketAddress;
 import java.util.Timer;
@@ -20,17 +17,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class KcpDisconnectExampleClient implements KcpListener {
 
     public static void main(String[] args) {
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true, 40, 2, true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true, 40, 2, true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
+        kcpConfig.setConv(55);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
+
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
         //channelConfig.setAckNoDelay(true);
         //channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
-        channelConfig.setConv(55);
         channelConfig.setUseConvChannel(true);
 
         KcpClient kcpClient = new KcpClient();
@@ -43,7 +43,7 @@ public class KcpDisconnectExampleClient implements KcpListener {
             public void run() {
                 for (int i = 0; i < 100; i++) {
                     try {
-                        channelConfig.setConv(id.incrementAndGet());
+                        channelConfig.getKcpConfig().setConv(id.incrementAndGet());
                         kcpClient.connect(new InetSocketAddress("127.0.0.1", 10031), channelConfig, kcpClientRttExample);
                     }catch (Exception e){
                         e.printStackTrace();

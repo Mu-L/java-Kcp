@@ -1,14 +1,10 @@
 package test;
 
-import com.backblaze.erasure.FecAdapt;
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.DefaultEventLoop;
-import io.netty.channel.EventLoop;
 import kcp.*;
-import threadPool.disruptor.DisruptorExecutorPool;
-import threadPool.disruptor.DisruptorSingleExecutor;
 
 import java.net.InetSocketAddress;
 
@@ -21,17 +17,19 @@ public class KcpPingPongExampleClient implements KcpListener {
 
     static DefaultEventLoop logicThread = new DefaultEventLoop();
     public static void main(String[] args) {
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
         //channelConfig.setiMessageExecutorPool(new DisruptorExecutorPool(Runtime.getRuntime().availableProcessors()));
         //channelConfig.setFecAdapt(new FecAdapt(10,3));
-        channelConfig.setAckNoDelay(false);
+        kcpConfig.setAckNoDelay(false);
         //channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
 
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         KcpClient kcpClient = new KcpClient();
         kcpClient.init(channelConfig);
 

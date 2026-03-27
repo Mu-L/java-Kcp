@@ -56,7 +56,7 @@ public class KcpClient {
         }else{
             channelManager = new ClientAddressChannelManager();
         }
-        this.iMessageExecutorPool = channelConfig.getiMessageExecutorPool();
+        this.iMessageExecutorPool = channelConfig.getMessageExecutorPool();
         nioEventLoopGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors());
 
         hashedWheelTimer = new HashedWheelTimer(new TimerThreadFactory(),1, TimeUnit.MILLISECONDS);

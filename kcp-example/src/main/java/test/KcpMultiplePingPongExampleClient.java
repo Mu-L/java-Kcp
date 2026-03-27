@@ -2,10 +2,7 @@ package test;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import kcp.ChannelConfig;
-import kcp.KcpClient;
-import kcp.KcpListener;
-import kcp.Ukcp;
+import kcp.*;
 
 import java.net.InetSocketAddress;
 import java.util.Timer;
@@ -19,11 +16,14 @@ import java.util.TimerTask;
 public class KcpMultiplePingPongExampleClient implements KcpListener {
 
     public static void main(String[] args) {
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,0,true);
-        channelConfig.setSndwnd(256);
-        channelConfig.setRcvwnd(256);
-        channelConfig.setMtu(400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,0,true);
+        kcpConfig.setSndwnd(256);
+        kcpConfig.setRcvwnd(256);
+        kcpConfig.setMtu(400);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
+
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
         //channelConfig.setAckNoDelay(true);
@@ -37,7 +37,7 @@ public class KcpMultiplePingPongExampleClient implements KcpListener {
 
         int clientNumber = 1000;
         for (int i = 0; i < clientNumber; i++) {
-            channelConfig.setConv(i);
+            channelConfig.getKcpConfig().setConv(i);
             kcpClient.connect(new InetSocketAddress("127.0.0.1", 10011), channelConfig, kcpMultiplePingPongExampleClient);
         }
     }

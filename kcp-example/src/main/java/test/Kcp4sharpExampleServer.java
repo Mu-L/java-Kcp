@@ -2,10 +2,7 @@ package test;
 
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 
 /**
  * 与c#版本兼容的客户端
@@ -18,13 +15,17 @@ public class Kcp4sharpExampleServer implements KcpListener {
 
         Kcp4sharpExampleServer kcpRttExampleServer = new Kcp4sharpExampleServer();
 
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,10,2,true);
-        channelConfig.setSndwnd(300);
-        channelConfig.setRcvwnd(300);
-        channelConfig.setMtu(512);
-        channelConfig.setAckNoDelay(true);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,10,2,true);
+        kcpConfig.setSndwnd(300);
+        kcpConfig.setRcvwnd(300);
+        kcpConfig.setMtu(512);
+        kcpConfig.setAckNoDelay(true);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
+
         channelConfig.setTimeoutMillis(10000);
+
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
         //c# crc32未实现

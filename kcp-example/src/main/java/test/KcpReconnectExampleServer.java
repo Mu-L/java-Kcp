@@ -2,10 +2,7 @@ package test;
 
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 
 /**
  * 重连测试服务器
@@ -17,15 +14,17 @@ public class KcpReconnectExampleServer implements KcpListener {
     public static void main(String[] args) {
 
         KcpReconnectExampleServer kcpRttExampleServer = new KcpReconnectExampleServer();
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
         //channelConfig.setAckNoDelay(true);
         //channelConfig.setCrc32Check(true);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setUseConvChannel(true);
         channelConfig.setTimeoutMillis(10000);
         KcpServer kcpServer = new KcpServer();

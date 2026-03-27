@@ -3,10 +3,7 @@ package test;
 import com.backblaze.erasure.FecAdapt;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import kcp.ChannelConfig;
-import kcp.KcpClient;
-import kcp.KcpListener;
-import kcp.Ukcp;
+import kcp.*;
 
 import java.net.InetSocketAddress;
 
@@ -18,19 +15,21 @@ import java.net.InetSocketAddress;
 public class Kcp4GoExampleClient implements KcpListener {
 
     public static void main(String[] args) {
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
+        kcpConfig.setAckNoDelay(false);
+        kcpConfig.setAckMaskSize(0);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
+
         channelConfig.setFecAdapt(new FecAdapt(10,3));
-        channelConfig.setAckNoDelay(false);
         //channelConfig.setTimeoutMillis(10000);
 
         //禁用参数
         channelConfig.setCrc32Check(false);
-        channelConfig.setAckMaskSize(0);
-
 
         KcpClient kcpClient = new KcpClient();
         kcpClient.init(channelConfig);
