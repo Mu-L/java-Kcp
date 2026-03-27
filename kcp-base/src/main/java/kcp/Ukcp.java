@@ -498,6 +498,30 @@ public class Ukcp{
         return controlWriteBufferSize;
     }
 
+    /**
+     * 当前 kcp 是否可写数据
+     *
+     * @return boolean 如果可以写数据，后续调用 {@link #write(ByteBuf)}
+     */
+    public boolean isWriteable() {
+        if (controlReadBufferSize) {
+            return writeBufferIncr.get() != 0;
+        }
+        return true;
+    }
+
+    /**
+     * 当前 kcp 是否可读数据
+     *
+     * @return boolean
+     */
+    public boolean isReadable() {
+        if (controlReadBufferSize) {
+            return readBufferIncr.get() != 0;
+        }
+        return true;
+    }
+
 
     @SuppressWarnings("unchecked")
     public User user() {
