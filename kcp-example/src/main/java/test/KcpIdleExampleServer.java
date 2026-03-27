@@ -29,8 +29,7 @@ public class KcpIdleExampleServer implements KcpListener {
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpIdleExampleServer, channelConfig, 10020);
+        KcpServer.createStarted(channelConfig, kcpIdleExampleServer, 10020);
     }
 
     private AtomicInteger atomicInteger = new AtomicInteger();

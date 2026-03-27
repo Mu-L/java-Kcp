@@ -27,8 +27,8 @@ public class KcpDisconnectExampleServer implements KcpListener {
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setUseConvChannel(true);
         channelConfig.setTimeoutMillis(5000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpRttExampleServer, channelConfig, 10031);
+
+        KcpServer.createStarted(channelConfig, kcpRttExampleServer, 10031);
     }
 
 

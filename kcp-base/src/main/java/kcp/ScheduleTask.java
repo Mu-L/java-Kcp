@@ -1,7 +1,7 @@
 package kcp;
 
-import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
+import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import threadPool.IMessageExecutor;
 import threadPool.ITask;
@@ -18,12 +18,12 @@ public class ScheduleTask implements ITask, Runnable, TimerTask {
 
     private final Ukcp ukcp;
 
-    private final HashedWheelTimer hashedWheelTimer;
+    private final Timer timer;
 
-    public ScheduleTask(IMessageExecutor messageExecutor, Ukcp ukcp, HashedWheelTimer hashedWheelTimer) {
+    public ScheduleTask(IMessageExecutor messageExecutor, Ukcp ukcp, Timer timer) {
         this.messageExecutor = messageExecutor;
         this.ukcp = ukcp;
-        this.hashedWheelTimer = hashedWheelTimer;
+        this.timer = timer;
     }
 
     //flush策略
@@ -47,11 +47,11 @@ public class ScheduleTask implements ITask, Runnable, TimerTask {
             long timeLeft = ukcp.getTsUpdate() - now;
             //判断执行时间是否到了
             if (timeLeft > 0) {
-                hashedWheelTimer.newTimeout(this,timeLeft, TimeUnit.MILLISECONDS);
+                timer.newTimeout(this,timeLeft, TimeUnit.MILLISECONDS);
                 return;
             }
             long next = ukcp.flush(now);
-            hashedWheelTimer.newTimeout(this,next, TimeUnit.MILLISECONDS);
+            timer.newTimeout(this,next, TimeUnit.MILLISECONDS);
             //检测写缓冲区 如果能写则触发写事件
             if (!ukcp.getWriteBuffer().isEmpty() && ukcp.canSend(false))
             {

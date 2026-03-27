@@ -33,8 +33,7 @@ public class KcpDisconnectExampleClient implements KcpListener {
         //channelConfig.setTimeoutMillis(10000);
         channelConfig.setUseConvChannel(true);
 
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         KcpDisconnectExampleClient kcpClientRttExample = new KcpDisconnectExampleClient();
         Timer timer = new Timer();
@@ -44,7 +43,7 @@ public class KcpDisconnectExampleClient implements KcpListener {
                 for (int i = 0; i < 100; i++) {
                     try {
                         channelConfig.getKcpConfig().setConv(id.incrementAndGet());
-                        kcpClient.connect(new InetSocketAddress("127.0.0.1", 10031), channelConfig, kcpClientRttExample);
+                        kcpClient.connect(new InetSocketAddress("127.0.0.1", 10031), kcpClientRttExample);
                     }catch (Exception e){
                         e.printStackTrace();
                     }

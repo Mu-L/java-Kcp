@@ -31,8 +31,8 @@ public class KcpGameTestServer implements KcpListener
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpGameTestServer, channelConfig, 10019);
+
+        KcpServer.createStarted(channelConfig, kcpGameTestServer, 10019);
 
         kcpGameTestServer.roomManager = new GameTestRoomManager();
 

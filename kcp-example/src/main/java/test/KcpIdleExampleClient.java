@@ -29,8 +29,7 @@ public class KcpIdleExampleClient implements KcpListener {
         channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
 
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
 
         for (int i = 0; i < 3; i++) {
@@ -43,7 +42,7 @@ public class KcpIdleExampleClient implements KcpListener {
             }
             KcpIdleExampleClient kcpIdleExampleClient = new KcpIdleExampleClient();
             //kcpClient.connect(new InetSocketAddress("10.60.100.191", 10020), channelConfig, kcpIdleExampleClient);
-            kcpClient.connect(new InetSocketAddress("127.0.0.1", 10020), channelConfig, kcpIdleExampleClient);
+            kcpClient.connect(new InetSocketAddress("127.0.0.1", 10020), kcpIdleExampleClient);
         }
 
     }

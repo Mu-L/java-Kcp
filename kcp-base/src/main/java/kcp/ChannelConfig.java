@@ -1,6 +1,8 @@
 package kcp;
 
 import com.backblaze.erasure.FecAdapt;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import threadPool.IMessageExecutorPool;
 import threadPool.netty.NettyMessageExecutorPool;
 
@@ -17,9 +19,9 @@ public class ChannelConfig {
     protected final KcpConfig kcpConfig;
 
     /**
-     * 处理kcp消息接收和发送的线程池
+     * 处理 kcp 消息接收和发送的线程池
      */
-    protected IMessageExecutorPool executorPool;
+    protected final IMessageExecutorPool executorPool;
 
     /**
      * 超时时间 超过一段时间没收到消息断开连接
@@ -54,6 +56,18 @@ public class ChannelConfig {
      * 使用conv确定一个channel 还是使用 socketAddress确定一个channel
      */
     protected boolean useConvChannel = false;
+
+    /**
+     * 预设的 Netty bootstrap 线程组，由此配置传入的线程组交由外层管理生命周期，用于 Server 和 Client。
+     * <p>
+     * 如果此值为 {@link null}，Server 和 Client 会自己创建并管理其生命周期
+     */
+    protected EventLoopGroup nettyBootstrapGroup;
+
+    /**
+     * 预设的 Netty bootstrap channel 类，它与 {@link #nettyBootstrapGroup} 一同传入
+     */
+    protected Class<? extends DatagramChannel> nettyBootstrapChannelClass;
 
     public ChannelConfig() {
         this(null, null);
@@ -111,10 +125,7 @@ public class ChannelConfig {
      */
     @Deprecated
     public void setiMessageExecutorPool(IMessageExecutorPool iMessageExecutorPool) {
-        if (this.executorPool != null) {
-            this.executorPool.stop();
-        }
-        this.executorPool = iMessageExecutorPool;
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     /**
@@ -307,5 +318,18 @@ public class ChannelConfig {
 
     public void setUseConvChannel(boolean useConvChannel) {
         this.useConvChannel = useConvChannel;
+    }
+
+    public void setNettyBootstrapGroup(EventLoopGroup nettyBootstrapGroup, Class<? extends DatagramChannel> nettyBootstrapChannelClass) {
+        this.nettyBootstrapGroup = nettyBootstrapGroup;
+        this.nettyBootstrapChannelClass = nettyBootstrapChannelClass;
+    }
+
+    public EventLoopGroup getNettyBootstrapGroup() {
+        return nettyBootstrapGroup;
+    }
+
+    public Class<? extends DatagramChannel> getNettyBootstrapChannelClass() {
+        return nettyBootstrapChannelClass;
     }
 }

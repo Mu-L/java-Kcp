@@ -27,7 +27,6 @@ public class KcpLockStepSynchronizationClient implements KcpListener
             number = Integer.parseInt(args[1]);
         }
 
-        KcpClient kcpClient = new KcpClient();
 
 
         KcpConfig kcpConfig = new KcpConfig();
@@ -44,11 +43,11 @@ public class KcpLockStepSynchronizationClient implements KcpListener
         channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
 
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
         KcpLockStepSynchronizationClient lockStepSynchronizationClient = new KcpLockStepSynchronizationClient();
 
         for (int i = 0; i < number; i++) {
-            kcpClient.connect(new InetSocketAddress(ip, 10009), channelConfig, lockStepSynchronizationClient);
+            kcpClient.connect(new InetSocketAddress(ip, 10009),  lockStepSynchronizationClient);
         }
 
         TimerThreadPool.scheduleWithFixedDelay(() -> {

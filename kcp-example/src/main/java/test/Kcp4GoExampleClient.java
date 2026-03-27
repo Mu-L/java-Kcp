@@ -31,12 +31,10 @@ public class Kcp4GoExampleClient implements KcpListener {
         //禁用参数
         channelConfig.setCrc32Check(false);
 
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
-
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         Kcp4GoExampleClient kcpGoExampleClient = new Kcp4GoExampleClient();
-        Ukcp ukcp = kcpClient.connect(new InetSocketAddress("127.0.0.1", 10000), channelConfig, kcpGoExampleClient);
+        Ukcp ukcp = kcpClient.connect(new InetSocketAddress("127.0.0.1", 10000), kcpGoExampleClient);
         String msg = "hello!!!!!11111111111111111111111111";
         byte[] bytes = msg.getBytes();
         ByteBuf byteBuf = ByteBufAllocator.DEFAULT.ioBuffer(bytes.length);

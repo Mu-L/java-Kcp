@@ -31,11 +31,10 @@ public class KcpReconnectExampleClient implements KcpListener {
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setUseConvChannel(true);
 
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         KcpReconnectExampleClient kcpClientRttExample = new KcpReconnectExampleClient();
-        Ukcp ukcp = kcpClient.connect(new InetSocketAddress("127.0.0.1", 10021), channelConfig, kcpClientRttExample);
+        Ukcp ukcp = kcpClient.connect(new InetSocketAddress("127.0.0.1", 10021), kcpClientRttExample);
         Timer timer =  new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override

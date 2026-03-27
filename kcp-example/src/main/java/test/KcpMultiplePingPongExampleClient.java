@@ -31,14 +31,13 @@ public class KcpMultiplePingPongExampleClient implements KcpListener {
         //channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
 
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
         KcpMultiplePingPongExampleClient kcpMultiplePingPongExampleClient = new KcpMultiplePingPongExampleClient();
 
         int clientNumber = 1000;
         for (int i = 0; i < clientNumber; i++) {
             channelConfig.getKcpConfig().setConv(i);
-            kcpClient.connect(new InetSocketAddress("127.0.0.1", 10011), channelConfig, kcpMultiplePingPongExampleClient);
+            kcpClient.connect(new InetSocketAddress("127.0.0.1", 10011), kcpMultiplePingPongExampleClient);
         }
     }
 

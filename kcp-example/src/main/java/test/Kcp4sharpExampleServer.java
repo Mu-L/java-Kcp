@@ -30,8 +30,7 @@ public class Kcp4sharpExampleServer implements KcpListener {
         //channelConfig.setFecParityShardCount(3);
         //c# crc32未实现
         channelConfig.setCrc32Check(false);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpRttExampleServer,channelConfig,10009);
+        KcpServer.createStarted(channelConfig, kcpRttExampleServer, 10009);
     }
 
 

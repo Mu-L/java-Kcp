@@ -217,7 +217,9 @@ public class Ukcp{
         return kcp.canRecv();
     }
 
-
+    protected IKcp getKcp() {
+        return kcp;
+    }
 
     protected long getLastRecieveTime() {
         return lastRecieveTime;
@@ -387,7 +389,7 @@ public class Ukcp{
      * 主动关闭连接调用
      */
     public void close() {
-        this.iMessageExecutor.execute(() -> internalClose());
+        this.iMessageExecutor.execute(this::internalClose);
     }
 
     private void notifyReadEvent() {

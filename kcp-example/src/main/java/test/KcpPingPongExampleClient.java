@@ -30,11 +30,10 @@ public class KcpPingPongExampleClient implements KcpListener {
         //channelConfig.setTimeoutMillis(10000);
 
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         KcpPingPongExampleClient kcpClientRttExample = new KcpPingPongExampleClient();
-        kcpClient.connect(new InetSocketAddress("127.0.0.1", 10001), channelConfig, kcpClientRttExample);
+        kcpClient.connect(new InetSocketAddress("127.0.0.1", 10001), kcpClientRttExample);
     }
     int i =0;
 

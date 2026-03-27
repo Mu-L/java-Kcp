@@ -56,11 +56,10 @@ public class KcpRttExampleClient implements KcpListener {
         channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
         //channelConfig.setAckMaskSize(32);
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         KcpRttExampleClient kcpClientRttExample = new KcpRttExampleClient();
-        kcpClient.connect(new InetSocketAddress("127.0.0.1",20003),channelConfig,kcpClientRttExample);
+        kcpClient.connect(new InetSocketAddress("127.0.0.1",20003),kcpClientRttExample);
 
         //kcpClient.connect(new InetSocketAddress("10.60.100.191",20003),channelConfig,kcpClientRttExample);
     }

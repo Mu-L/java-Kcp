@@ -31,11 +31,10 @@ public class KcpLockStepSynchronizationServer implements KcpListener
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpLockStepSynchronizationServer, channelConfig, 10009);
+
+        KcpServer.createStarted(channelConfig, kcpLockStepSynchronizationServer, 10009);
 
         kcpLockStepSynchronizationServer.roomManager = new RoomManager();
-
 
         TimerThreadPool.scheduleWithFixedDelay(() -> {
             try {

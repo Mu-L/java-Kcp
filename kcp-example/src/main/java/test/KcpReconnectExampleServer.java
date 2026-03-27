@@ -27,8 +27,8 @@ public class KcpReconnectExampleServer implements KcpListener {
         ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setUseConvChannel(true);
         channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpRttExampleServer, channelConfig, 10021);
+
+        KcpServer.createStarted(channelConfig, kcpRttExampleServer, 10021);
     }
 
 

@@ -30,7 +30,6 @@ public class KcpGameTestClient implements KcpListener
             number = Integer.parseInt(args[1]);
         }
 
-        KcpClient kcpClient = new KcpClient();
 
         KcpConfig kcpConfig = new KcpConfig();
         kcpConfig.nodelay(true,40,2,true);
@@ -45,11 +44,11 @@ public class KcpGameTestClient implements KcpListener
         channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
 
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
         KcpGameTestClient kcpGameTestClient = new KcpGameTestClient();
 
         for (int i = 0; i < number; i++) {
-            kcpClient.connect(new InetSocketAddress(ip, 10019), channelConfig, kcpGameTestClient);
+            kcpClient.connect(new InetSocketAddress(ip, 10019), kcpGameTestClient);
         }
 
         TimerThreadPool.scheduleWithFixedDelay(() -> {
