@@ -19,10 +19,9 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Ukcp{
+public class Ukcp {
 
     private static final InternalLogger log = InternalLoggerFactory.getInstance(Ukcp.class);
-
 
     private final IKcp kcp;
 
@@ -59,23 +58,21 @@ public class Ukcp{
 
     private final ReadTask readTask = new ReadTask(this);
 
-    private boolean controlReadBufferSize=false;
+    private boolean controlReadBufferSize = false;
 
-    private boolean controlWriteBufferSize=false;
-
+    private boolean controlWriteBufferSize = false;
 
     /**
      * 上次收到消息时间
      **/
-    private long lastRecieveTime = System.currentTimeMillis();
-
+    private long lastReceiveTime = System.currentTimeMillis();
 
     /**
      * Creates a new instance.
      *
      * @param output output for kcp
      */
-    public Ukcp(KcpOutput output, KcpListener kcpListener, IMessageExecutor iMessageExecutor,  ChannelConfig channelConfig,
+    public Ukcp(KcpOutput output, KcpListener kcpListener, IMessageExecutor iMessageExecutor, ChannelConfig channelConfig,
                 IChannelManager channelManager) {
         KcpConfig kcpConfig = channelConfig.getKcpConfig();
         this.timeoutMillis = channelConfig.getTimeoutMillis();
@@ -88,41 +85,39 @@ public class Ukcp{
         this.readBuffer = new MpscLinkedQueue<>();
         this.fastFlush = channelConfig.isFastFlush();
 
-        if(channelConfig.getReadBufferSize()!=-1){
+        if (channelConfig.getReadBufferSize() != -1) {
             this.controlReadBufferSize = true;
-            this.readBufferIncr.set(channelConfig.getReadBufferSize()/kcpConfig.getMtu());
+            this.readBufferIncr.set(channelConfig.getReadBufferSize() / kcpConfig.getMtu());
         }
 
-        if(channelConfig.getWriteBufferSize()!=-1){
+        if (channelConfig.getWriteBufferSize() != -1) {
             this.controlWriteBufferSize = true;
-            this.writeBufferIncr.set(channelConfig.getWriteBufferSize()/kcpConfig.getMtu());
+            this.writeBufferIncr.set(channelConfig.getWriteBufferSize() / kcpConfig.getMtu());
         }
-
 
 
         int headerSize = 0;
         FecAdapt fecAdapt = channelConfig.getFecAdapt();
-        if(channelConfig.isCrc32Check()){
+        if (channelConfig.isCrc32Check()) {
             headerSize += ChannelConfig.crc32Size;
         }
 
         //init fec
         if (fecAdapt != null) {
             KcpOutput kcpOutput = kcp.getOutput();
-            fecEncode = fecAdapt.fecEncode(headerSize,kcpConfig.getMtu());
+            fecEncode = fecAdapt.fecEncode(headerSize, kcpConfig.getMtu());
             fecDecode = fecAdapt.fecDecode(kcpConfig.getMtu());
             kcpOutput = new FecOutPut(kcpOutput, fecEncode);
             kcp.setOutput(kcpOutput);
-            headerSize+= Fec.fecHeaderSizePlus2;
+            headerSize += Fec.fecHeaderSizePlus2;
         }
 
         kcp.setReserved(headerSize);
         initKcpConfig(kcpConfig);
     }
 
-
     private void initKcpConfig(KcpConfig kcpConfig) {
-        kcp.nodelay(kcpConfig.isNodelay(),kcpConfig.getInterval(),kcpConfig.getFastresend(),kcpConfig.isNocwnd());
+        kcp.nodelay(kcpConfig.isNodelay(), kcpConfig.getInterval(), kcpConfig.getFastresend(), kcpConfig.isNocwnd());
         kcp.setSndWnd(kcpConfig.getSndwnd());
         kcp.setRcvWnd(kcpConfig.getRcvwnd());
         kcp.setMtu(kcpConfig.getMtu());
@@ -131,9 +126,8 @@ public class Ukcp{
         kcp.setAckMaskSize(kcpConfig.getAckMaskSize());
     }
 
-
     /**
-     * Receives ByteBufs.
+     * Receives ByteBuf list.
      *
      * @param bufList received ByteBuf will be add to the list
      */
@@ -141,14 +135,12 @@ public class Ukcp{
         kcp.recv(bufList);
     }
 
-
     protected ByteBuf mergeReceive() {
         return kcp.mergeRecv();
     }
 
-
-    protected void input(ByteBuf data,long current) throws IOException {
-        //lastRecieveTime = System.currentTimeMillis();
+    protected void input(ByteBuf data, long current) throws IOException {
+        //lastReceiveTime = System.currentTimeMillis();
         Snmp.snmp.InPkts.increment();
         Snmp.snmp.InBytes.add(data.readableBytes());
 
@@ -156,26 +148,26 @@ public class Ukcp{
             FecPacket fecPacket = FecPacket.newFecPacket(data);
             if (fecPacket.getFlag() == Fec.typeData) {
                 data.skipBytes(2);
-                input(data, true,current);
+                input(data, true, current);
             }
             if (fecPacket.getFlag() == Fec.typeData || fecPacket.getFlag() == Fec.typeParity) {
                 List<ByteBuf> byteBufs = fecDecode.decode(fecPacket);
                 if (byteBufs != null) {
                     ByteBuf byteBuf;
-                    for (int i = 0; i < byteBufs.size(); i++) {
-                        byteBuf = byteBufs.get(i);
-                        input(byteBuf, false,current);
+                    for (ByteBuf buf : byteBufs) {
+                        byteBuf = buf;
+                        input(byteBuf, false, current);
                         byteBuf.release();
                     }
                 }
             }
         } else {
-            input(data, true,current);
+            input(data, true, current);
         }
     }
 
-    private void input(ByteBuf data, boolean regular,long current) throws IOException {
-        int ret = kcp.input(data, regular,current);
+    private void input(ByteBuf data, boolean regular, long current) throws IOException {
+        int ret = kcp.input(data, regular, current);
         switch (ret) {
             case -1:
                 throw new IOException("No enough bytes of head");
@@ -190,28 +182,21 @@ public class Ukcp{
         }
     }
 
-
     /**
-     * Sends a Bytebuf.
+     * Sends a ByteBuf.
      *
      * @param buf
      * @throws IOException
      */
     void send(ByteBuf buf) throws IOException {
         int ret = kcp.send(buf);
-        switch (ret) {
-            case -2:
-                throw new IOException("Too many fragments");
-            default:
-                break;
+        if (ret == -2) {
+            throw new IOException("Too many fragments");
         }
     }
 
-
     /**
-     * Returns {@code true} if there are bytes can be received.
-     *
-     * @return
+     * @return {@code true} if there are bytes can be received.
      */
     protected boolean canRecv() {
         return kcp.canRecv();
@@ -221,12 +206,12 @@ public class Ukcp{
         return kcp;
     }
 
-    protected long getLastRecieveTime() {
-        return lastRecieveTime;
+    protected long getLastReceiveTime() {
+        return lastReceiveTime;
     }
 
-    protected void setLastRecieveTime(long lastRecieveTime) {
-        this.lastRecieveTime = lastRecieveTime;
+    protected void setLastReceiveTime(long lastReceiveTime) {
+        this.lastReceiveTime = lastReceiveTime;
     }
 
     /**
@@ -247,7 +232,7 @@ public class Ukcp{
     }
 
     /**
-     * Udpates the kcp.
+     * Updates the kcp.
      *
      * @param current current time in milliseconds
      * @return the next time to update
@@ -260,15 +245,14 @@ public class Ukcp{
         return nextTsUp;
     }
 
-    protected long flush(long current){
-        return kcp.flush(false,current);
+    protected long flush(long current) {
+        return kcp.flush(false, current);
     }
 
     /**
-     * Determines when should you invoke udpate.
+     * Determines when should you invoke update.
      *
      * @param current current time in milliseconds
-     * @return
      * @see Kcp#check(long)
      */
     protected long check(long current) {
@@ -313,11 +297,9 @@ public class Ukcp{
     }
 
 
-
     protected boolean isStream() {
         return kcp.isStream();
     }
-
 
 
     /**
@@ -336,17 +318,17 @@ public class Ukcp{
     }
 
     protected void read(ByteBuf byteBuf) {
-        if(controlReadBufferSize){
-            int readBufferSize =readBufferIncr.getAndUpdate(operand -> {
-                if(operand==0){
+        if (controlReadBufferSize) {
+            int readBufferSize = readBufferIncr.getAndUpdate(operand -> {
+                if (operand == 0) {
                     return operand;
                 }
                 return --operand;
             });
-            if(readBufferSize==0){
+            if (readBufferSize == 0) {
                 //TODO 这里做的不对 应该丢弃队列最早的那个消息包  这样子丢弃有一定的概率会卡死 以后优化
                 byteBuf.release();
-                log.error("conv {} address {} readBuffer is full",kcp.getConv(),((User)kcp.getUser()).getRemoteAddress());
+                log.error("conv {} address {} readBuffer is full", kcp.getConv(), ((User) kcp.getUser()).getRemoteAddress());
                 return;
             }
         }
@@ -357,18 +339,19 @@ public class Ukcp{
     /**
      * 发送有序可靠消息
      * 线程安全的
+     *
      * @param byteBuf 发送后需要手动调用 {@link ByteBuf#release()}
      * @return true发送成功  false缓冲区满了
      */
     public boolean write(ByteBuf byteBuf) {
-        if(controlWriteBufferSize){
-            int bufferSize =writeBufferIncr.getAndUpdate(operand -> {
-                if(operand==0){
+        if (controlWriteBufferSize) {
+            int bufferSize = writeBufferIncr.getAndUpdate(operand -> {
+                if (operand == 0) {
                     return operand;
                 }
                 return --operand;
             });
-            if(bufferSize==0){
+            if (bufferSize == 0) {
                 //log.error("conv {} address {} writeBuffer is full",kcp.getConv(),((User)kcp.getUser()).getRemoteAddress());
                 return false;
             }
@@ -379,11 +362,9 @@ public class Ukcp{
         return true;
     }
 
-
     protected AtomicInteger getReadBufferIncr() {
         return readBufferIncr;
     }
-
 
     /**
      * 主动关闭连接调用
@@ -393,17 +374,16 @@ public class Ukcp{
     }
 
     private void notifyReadEvent() {
-        if(readProcessing.compareAndSet(false,true)){
+        if (readProcessing.compareAndSet(false, true)) {
             this.iMessageExecutor.execute(this.readTask);
         }
     }
 
     protected void notifyWriteEvent() {
-        if(writeProcessing.compareAndSet(false,true)){
+        if (writeProcessing.compareAndSet(false, true)) {
             this.iMessageExecutor.execute(this.writeTask);
         }
     }
-
 
     protected long getTsUpdate() {
         return tsUpdate;
@@ -430,9 +410,8 @@ public class Ukcp{
         return active;
     }
 
-
     void internalClose() {
-        if(!active){
+        if (!active) {
             return;
         }
         this.active = false;
@@ -440,7 +419,7 @@ public class Ukcp{
         kcpListener.handleClose(this);
         //关闭之前尽量把消息都发出去
         notifyWriteEvent();
-        kcp.flush(false,System.currentTimeMillis());
+        kcp.flush(false, System.currentTimeMillis());
         //连接删除
         channelManager.del(this);
         release();
@@ -526,8 +505,6 @@ public class Ukcp{
         return true;
     }
 
-
-    @SuppressWarnings("unchecked")
     public User user() {
         return (User) kcp.getUser();
     }

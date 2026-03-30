@@ -64,6 +64,12 @@ public abstract class AbstractKcpServer {
         this.kcpListener = kcpListener;
     }
 
+    /**
+     * 启动 KCP 服务
+     *
+     * @param ports 服务绑定的端口，可以传多个值
+     * @throws IllegalStateException 如果本服务已经启动，会抛出此异常
+     */
     public synchronized void start(int... ports) throws IllegalStateException {
         if (isStarted()) {
             throw new IllegalStateException("Kcp server is already started");

@@ -11,12 +11,42 @@ import java.util.Collection;
  * 2019/10/16.
  */
 public interface IChannelManager {
-
+    /**
+     * 根据 UDP 消息读取到指定的 kcp 连接对象
+     *
+     * @param msg UDP消息
+     * @return {@link Ukcp} 对象，如果不存在则返回 {@link null}
+     */
     Ukcp get(DatagramPacket msg);
 
-    void New(SocketAddress socketAddress,Ukcp ukcp,DatagramPacket msg);
+    /**
+     * Deprecated. 请使用 {@link #add(SocketAddress, Ukcp, DatagramPacket)} 方法
+     */
+    @Deprecated
+    default void New(SocketAddress socketAddress, Ukcp ukcp, DatagramPacket msg) {
+        add(socketAddress, ukcp, msg);
+    }
 
+    /**
+     * 新增一个 kcp 连接对象
+     *
+     * @param socketAddress 与 {@link Ukcp} 绑定的地址
+     * @param ukcp          {@link Ukcp} 对象
+     * @param msg           UDP 消息，可能为 {@link null}
+     */
+    void add(SocketAddress socketAddress, Ukcp ukcp, DatagramPacket msg);
+
+    /**
+     * 删除一个 kcp 连接对象
+     *
+     * @param ukcp {@link Ukcp} 对象
+     */
     void del(Ukcp ukcp);
 
+    /**
+     * 获取所有的 kcp 连接对象
+     *
+     * @return {@link Ukcp}'s {@link Collection}
+     */
     Collection<Ukcp> getAll();
 }

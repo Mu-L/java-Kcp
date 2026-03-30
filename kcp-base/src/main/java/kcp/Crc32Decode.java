@@ -13,23 +13,23 @@ import java.util.zip.CRC32;
  * Created by JinMiao
  * 2019/12/10.
  */
-public class Crc32Decode extends ChannelInboundHandlerAdapter
-{
-    private CRC32 crc32 = new CRC32();
+public class Crc32Decode extends ChannelInboundHandlerAdapter {
+    private final CRC32 crc32 = new CRC32();
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof DatagramPacket) {
             DatagramPacket datagramPacket = (DatagramPacket) msg;
             ByteBuf data = datagramPacket.content();
-            long checksum =  data.readUnsignedIntLE();
-            ByteBuffer byteBuffer = data.nioBuffer(data.readerIndex(),data.readableBytes());
+            long checksum = data.readUnsignedIntLE();
+            ByteBuffer byteBuffer = data.nioBuffer(data.readerIndex(), data.readableBytes());
             crc32.reset();
             crc32.update(byteBuffer);
-            if(checksum!=crc32.getValue()){
+            if (checksum != crc32.getValue()) {
                 Snmp.snmp.getInCsumErrors().increment();
                 return;
             }
         }
-       ctx.fireChannelRead(msg);
+        ctx.fireChannelRead(msg);
     }
 }

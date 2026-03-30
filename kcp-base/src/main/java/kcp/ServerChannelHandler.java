@@ -16,14 +16,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
 
-    private final IChannelManager channelManager;
-    private final ChannelConfig channelConfig;
-    private final KcpListener kcpListener;
-    private final Timer timer;
+    protected final IChannelManager channelManager;
+    protected final ChannelConfig channelConfig;
+    protected final KcpListener kcpListener;
+    protected final Timer timer;
 
-    private Ukcp channelUkcp;
+    protected Ukcp channelUkcp;
 
-    public ServerChannelHandler(IChannelManager channelManager, ChannelConfig channelConfig, KcpListener kcpListener,Timer timer) {
+    public ServerChannelHandler(IChannelManager channelManager, ChannelConfig channelConfig, KcpListener kcpListener, Timer timer) {
         this.channelManager = channelManager;
         this.channelConfig = channelConfig;
         this.kcpListener = kcpListener;
@@ -56,8 +56,8 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
         }
 
         //如果是新连接第一个包的sn必须为0
-        int sn = getSn(byteBuf,channelConfig);
-        if(sn!=0){
+        int sn = getSn(byteBuf, channelConfig);
+        if (sn != 0) {
             msg.release();
             return;
         }
@@ -66,7 +66,7 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
         Ukcp newUkcp = new Ukcp(kcpOutput, kcpListener, executor, channelConfig, channelManager);
 
         newUkcp.user(new User(ctx.channel(), msg.sender(), msg.recipient()));
-        channelManager.New(msg.sender(), newUkcp, msg);
+        channelManager.add(msg.sender(), newUkcp, msg);
 
         executor.execute(() -> {
             try {
@@ -79,16 +79,16 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
         newUkcp.read(byteBuf);
 
         ScheduleTask scheduleTask = new ScheduleTask(executor, newUkcp, timer);
-        timer.newTimeout(scheduleTask,newUkcp.getInterval(), TimeUnit.MILLISECONDS);
+        timer.newTimeout(scheduleTask, newUkcp.getInterval(), TimeUnit.MILLISECONDS);
     }
 
-    protected int getSn(ByteBuf byteBuf,ChannelConfig channelConfig){
+    protected int getSn(ByteBuf byteBuf, ChannelConfig channelConfig) {
         int headerSize = 0;
-        if(channelConfig.getFecAdapt()!=null){
-            headerSize+= Fec.fecHeaderSizePlus2;
+        if (channelConfig.getFecAdapt() != null) {
+            headerSize += Fec.fecHeaderSizePlus2;
         }
 
-        return byteBuf.getIntLE(byteBuf.readerIndex()+Kcp.IKCP_SN_OFFSET+headerSize);
+        return byteBuf.getIntLE(byteBuf.readerIndex() + Kcp.IKCP_SN_OFFSET + headerSize);
     }
 
 }

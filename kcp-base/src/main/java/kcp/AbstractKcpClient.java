@@ -59,6 +59,10 @@ public abstract class AbstractKcpClient {
 
     public AbstractKcpClient(ChannelConfig channelConfig) {
         this.channelConfig = channelConfig;
+        init();
+    }
+
+    protected void init() {
         if (channelConfig.isUseConvChannel()) {
             int convIndex = 0;
             if (channelConfig.getFecAdapt() != null) {
@@ -68,20 +72,16 @@ public abstract class AbstractKcpClient {
         } else {
             channelManager = new ClientAddressChannelManager();
         }
-        init();
-    }
-
-    protected void init() {
         timer = new HashedWheelTimer(new TimerThreadFactory(), 1, TimeUnit.MILLISECONDS);
         bootstrap = new Bootstrap();
         initBootstrapGroup();
 
         bootstrap.handler(new ChannelInitializer<DatagramChannel>() {
-                    @Override
-                    protected void initChannel(DatagramChannel ch) {
-                        AbstractKcpClient.this.initChannel(ch);
-                    }
-                });
+            @Override
+            protected void initChannel(DatagramChannel ch) {
+                AbstractKcpClient.this.initChannel(ch);
+            }
+        });
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
@@ -195,7 +195,7 @@ public abstract class AbstractKcpClient {
         Ukcp ukcp = new Ukcp(kcpOutput, kcpListener, executor, channelConfig, channelManager);
         ukcp.user(user);
 
-        channelManager.New(localAddress, ukcp, null);
+        channelManager.add(localAddress, ukcp, null);
         executor.execute(() -> {
             try {
                 ukcp.getKcpListener().onConnected(ukcp);

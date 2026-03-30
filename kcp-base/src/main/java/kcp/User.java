@@ -20,7 +20,8 @@ public class User {
         this.cache = cache;
     }
 
-    public <T>  T getCache() {
+    @SuppressWarnings("unchecked")
+    public <T> T getCache() {
         return (T) cache;
     }
 
@@ -53,7 +54,6 @@ public class User {
     protected void setLocalAddress(InetSocketAddress localAddress) {
         this.localAddress = localAddress;
     }
-
 
     @Override
     public String toString() {

@@ -320,6 +320,16 @@ public class ChannelConfig {
         this.useConvChannel = useConvChannel;
     }
 
+    /**
+     * 设置Netty Bootstrap启动时所使用的 <code>group</code> 和 <code>channelClass</code> 参数，
+     * 在 {@link KcpServer} 和 {@link KcpClient}等场景会使用到。
+     * </p>
+     * <strong>如果group不为{@link null}，group线程池须由调用方自行管理生命周期！</strong>
+     * 如果为 {@link null} 则由内部服务管理生命周期，在服务停止时会自动调用 {@link EventLoopGroup#shutdownGracefully()} 方法
+     *
+     * @param nettyBootstrapGroup        {@link io.netty.bootstrap.Bootstrap#group(EventLoopGroup)} 参数值
+     * @param nettyBootstrapChannelClass {@link io.netty.bootstrap.Bootstrap#channel(Class)} 参数值
+     */
     public void setNettyBootstrapGroup(EventLoopGroup nettyBootstrapGroup, Class<? extends DatagramChannel> nettyBootstrapChannelClass) {
         this.nettyBootstrapGroup = nettyBootstrapGroup;
         this.nettyBootstrapChannelClass = nettyBootstrapChannelClass;
