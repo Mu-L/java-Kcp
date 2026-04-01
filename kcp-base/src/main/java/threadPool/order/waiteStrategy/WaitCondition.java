@@ -7,8 +7,7 @@ package threadPool.order.waiteStrategy;
 public interface WaitCondition<T> {
 	
 	/**
-	 * 附件
-	 * @return
+	 * @return 附件
 	 */
 	T getAttach();
 	

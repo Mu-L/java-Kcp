@@ -1,6 +1,8 @@
 package kcp;
 
 import com.backblaze.erasure.FecAdapt;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import threadPool.IMessageExecutorPool;
 import threadPool.netty.NettyMessageExecutorPool;
 
@@ -11,49 +13,89 @@ import threadPool.netty.NettyMessageExecutorPool;
 public class ChannelConfig {
     public static final int crc32Size = 4;
 
-    private int conv;
-    private boolean nodelay;
-    private int interval = Kcp.IKCP_INTERVAL;
-    private int fastresend;
-    private boolean nocwnd;
-    private int sndwnd = Kcp.IKCP_WND_SND;
-    private int rcvwnd = Kcp.IKCP_WND_RCV;
-    private int mtu = Kcp.IKCP_MTU_DEF;
-    //超时时间 超过一段时间没收到消息断开连接
-    private long timeoutMillis;
-    //TODO 可能有bug还未测试
-    private boolean stream;
+    /**
+     * The underlying KCP protocol configuration.
+     */
+    protected final KcpConfig kcpConfig;
 
-    //下面为新增参数
-    private FecAdapt fecAdapt;
-    //收到包立刻回传ack包
-    private boolean ackNoDelay = false;
-    //发送包立即调用flush 延迟低一些  cpu增加  如果interval值很小 建议关闭该参数
-    private boolean fastFlush = true;
-    //crc32校验
-    private boolean crc32Check = false;
-    //接收窗口大小(字节 -1不限制)
-    private int readBufferSize = -1;
-    //发送窗口大小(字节 -1不限制)
-    private int writeBufferSize = -1;
+    /**
+     * 处理 kcp 消息接收和发送的线程池
+     */
+    protected final IMessageExecutorPool executorPool;
 
-    //增加ack包回复成功率 填 /8/16/32
-    private int ackMaskSize = 0;
+    /**
+     * 超时时间 超过一段时间没收到消息断开连接
+     */
+    protected long timeoutMillis;
+
+    /**
+     * FEC(Forward Error Correction) 前向纠错适配器
+     */
+    protected FecAdapt fecAdapt;
+
+    /**
+     * 发送包立即调用flush 延迟低一些  cpu增加  如果interval值很小 建议关闭该参数
+     */
+    protected boolean fastFlush = true;
+
+    /**
+     * 是否开启 crc32 校验
+     */
+    protected boolean crc32Check = false;
+
+    /**
+     * 接收窗口大小(字节 -1不限制)
+     */
+    protected int readBufferSize = -1;
+    /**
+     * 发送窗口大小(字节 -1不限制)
+     */
+    protected int writeBufferSize = -1;
+
     /**
      * 使用conv确定一个channel 还是使用 socketAddress确定一个channel
-     **/
-    private boolean useConvChannel = false;
+     */
+    protected boolean useConvChannel = false;
+
     /**
-     * 处理kcp消息接收和发送的线程池
-     **/
-    private IMessageExecutorPool iMessageExecutorPool = new NettyMessageExecutorPool(Runtime.getRuntime().availableProcessors());
+     * 预设的 Netty bootstrap 线程组，由此配置传入的线程组交由外层管理生命周期，用于 Server 和 Client。
+     * <p>
+     * 如果此值为 {@link null}，Server 和 Client 会自己创建并管理其生命周期
+     */
+    protected EventLoopGroup nettyBootstrapGroup;
 
+    /**
+     * 预设的 Netty bootstrap channel 类，它与 {@link #nettyBootstrapGroup} 一同传入
+     */
+    protected Class<? extends DatagramChannel> nettyBootstrapChannelClass;
 
+    public ChannelConfig() {
+        this(null, null);
+    }
+
+    public ChannelConfig(KcpConfig kcpConfig) {
+        this(kcpConfig, null);
+    }
+
+    public ChannelConfig(KcpConfig kcpConfig, IMessageExecutorPool executorPool) {
+        this.kcpConfig = kcpConfig == null
+                ? new KcpConfig()
+                : kcpConfig;
+        this.executorPool = executorPool == null
+                ? new NettyMessageExecutorPool(Runtime.getRuntime().availableProcessors())
+                : executorPool;
+    }
+
+    public KcpConfig getKcpConfig() {
+        return kcpConfig;
+    }
+
+    /**
+     * Deprecated. 请使用 {@link KcpConfig#nodelay(boolean, int, int, boolean)}
+     */
+    @Deprecated
     public void nodelay(boolean nodelay, int interval, int resend, boolean nc) {
-        this.nodelay = nodelay;
-        this.interval = interval;
-        this.fastresend = resend;
-        this.nocwnd = nc;
+        kcpConfig.nodelay(nodelay, interval, resend, nc);
     }
 
     public int getReadBufferSize() {
@@ -64,63 +106,122 @@ public class ChannelConfig {
         this.readBufferSize = readBufferSize;
     }
 
+    /**
+     * Deprecated. 使用 {@link #getMessageExecutorPool()}
+     *
+     * @return {@link IMessageExecutorPool}
+     */
+    @Deprecated
     public IMessageExecutorPool getiMessageExecutorPool() {
-        return iMessageExecutorPool;
+        return executorPool;
     }
 
+    public IMessageExecutorPool getMessageExecutorPool() {
+        return executorPool;
+    }
+
+    /**
+     * Deprecated. 请使用构造函数传入线程池
+     */
+    @Deprecated
     public void setiMessageExecutorPool(IMessageExecutorPool iMessageExecutorPool) {
-        if (this.iMessageExecutorPool != null) {
-            this.iMessageExecutorPool.stop();
-        }
-        this.iMessageExecutorPool = iMessageExecutorPool;
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#isNodelay()}方法
+     */
+    @Deprecated
     public boolean isNodelay() {
-        return nodelay;
+        return kcpConfig.isNodelay();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getConv()}方法
+     */
+    @Deprecated
     public int getConv() {
-        return conv;
+        return kcpConfig.getConv();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setConv}方法
+     */
+    @Deprecated
     public void setConv(int conv) {
-        this.conv = conv;
+        kcpConfig.setConv(conv);
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getInterval}方法
+     */
+    @Deprecated
     public int getInterval() {
-        return interval;
+        return kcpConfig.getInterval();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getFastresend}方法
+     */
+    @Deprecated
     public int getFastresend() {
-        return fastresend;
+        return kcpConfig.getFastresend();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#isNocwnd}方法
+     */
+    @Deprecated
     public boolean isNocwnd() {
-        return nocwnd;
+        return kcpConfig.isNocwnd();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getSndwnd}方法
+     */
+    @Deprecated
     public int getSndwnd() {
-        return sndwnd;
+        return kcpConfig.getSndwnd();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setSndwnd}方法
+     */
+    @Deprecated
     public void setSndwnd(int sndwnd) {
-        this.sndwnd = sndwnd;
+        kcpConfig.setSndwnd(sndwnd);
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getRcvwnd}方法
+     */
+    @Deprecated
     public int getRcvwnd() {
-        return rcvwnd;
+        return kcpConfig.getRcvwnd();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setRcvwnd}方法
+     */
+    @Deprecated
     public void setRcvwnd(int rcvwnd) {
-        this.rcvwnd = rcvwnd;
+        kcpConfig.setRcvwnd(rcvwnd);
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getMtu}方法
+     */
+    @Deprecated
     public int getMtu() {
-        return mtu;
+        return kcpConfig.getMtu();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setMtu}方法
+     */
+    @Deprecated
     public void setMtu(int mtu) {
-        this.mtu = mtu;
+        kcpConfig.setMtu(mtu);
     }
 
     public long getTimeoutMillis() {
@@ -131,12 +232,20 @@ public class ChannelConfig {
         this.timeoutMillis = timeoutMillis;
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#isStream}方法
+     */
+    @Deprecated
     public boolean isStream() {
-        return stream;
+        return kcpConfig.isStream();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setStream}方法
+     */
+    @Deprecated
     public void setStream(boolean stream) {
-        this.stream = stream;
+        kcpConfig.setStream(stream);
     }
 
     public FecAdapt getFecAdapt() {
@@ -147,12 +256,20 @@ public class ChannelConfig {
         this.fecAdapt = fecAdapt;
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#isAckNoDelay}方法
+     */
+    @Deprecated
     public boolean isAckNoDelay() {
-        return ackNoDelay;
+        return kcpConfig.isAckNoDelay();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setAckNoDelay}方法
+     */
+    @Deprecated
     public void setAckNoDelay(boolean ackNoDelay) {
-        this.ackNoDelay = ackNoDelay;
+        kcpConfig.setAckNoDelay(ackNoDelay);
     }
 
     public boolean isFastFlush() {
@@ -167,12 +284,20 @@ public class ChannelConfig {
         return crc32Check;
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#getAckMaskSize}方法
+     */
+    @Deprecated
     public int getAckMaskSize() {
-        return ackMaskSize;
+        return kcpConfig.getAckMaskSize();
     }
 
+    /**
+     * Deprecated. 请使用 {@link #getKcpConfig()} 获取KCP基础配置对象，然后使用{@link KcpConfig#setAckMaskSize}方法
+     */
+    @Deprecated
     public void setAckMaskSize(int ackMaskSize) {
-        this.ackMaskSize = ackMaskSize;
+        kcpConfig.setAckMaskSize(ackMaskSize);
     }
 
     public void setCrc32Check(boolean crc32Check) {
@@ -193,5 +318,28 @@ public class ChannelConfig {
 
     public void setUseConvChannel(boolean useConvChannel) {
         this.useConvChannel = useConvChannel;
+    }
+
+    /**
+     * 设置Netty Bootstrap启动时所使用的 <code>group</code> 和 <code>channelClass</code> 参数，
+     * 在 {@link KcpServer} 和 {@link KcpClient}等场景会使用到。
+     * </p>
+     * <strong>如果group不为{@link null}，group线程池须由调用方自行管理生命周期！</strong>
+     * 如果为 {@link null} 则由内部服务管理生命周期，在服务停止时会自动调用 {@link EventLoopGroup#shutdownGracefully()} 方法
+     *
+     * @param nettyBootstrapGroup        {@link io.netty.bootstrap.Bootstrap#group(EventLoopGroup)} 参数值
+     * @param nettyBootstrapChannelClass {@link io.netty.bootstrap.Bootstrap#channel(Class)} 参数值
+     */
+    public void setNettyBootstrapGroup(EventLoopGroup nettyBootstrapGroup, Class<? extends DatagramChannel> nettyBootstrapChannelClass) {
+        this.nettyBootstrapGroup = nettyBootstrapGroup;
+        this.nettyBootstrapChannelClass = nettyBootstrapChannelClass;
+    }
+
+    public EventLoopGroup getNettyBootstrapGroup() {
+        return nettyBootstrapGroup;
+    }
+
+    public Class<? extends DatagramChannel> getNettyBootstrapChannelClass() {
+        return nettyBootstrapChannelClass;
     }
 }

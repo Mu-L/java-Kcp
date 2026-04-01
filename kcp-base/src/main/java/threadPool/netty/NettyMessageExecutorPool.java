@@ -14,13 +14,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class NettyMessageExecutorPool implements IMessageExecutorPool {
 
-    private EventLoopGroup eventExecutors;
+    private final EventLoopGroup eventExecutors;
 
     protected static final AtomicInteger index = new AtomicInteger();
 
-    public NettyMessageExecutorPool(int workSize){
+    public NettyMessageExecutorPool(int workSize) {
         eventExecutors = new DefaultEventLoopGroup(workSize, r -> {
-            return new Thread(r,"nettyMessageExecutorPool-"+index.incrementAndGet());
+            return new Thread(r, "nettyMessageExecutorPool-" + index.incrementAndGet());
         });
     }
 
@@ -31,7 +31,7 @@ public class NettyMessageExecutorPool implements IMessageExecutorPool {
 
     @Override
     public void stop() {
-        if(!eventExecutors.isShuttingDown()){
+        if (!eventExecutors.isShuttingDown()) {
             eventExecutors.shutdownGracefully();
         }
     }

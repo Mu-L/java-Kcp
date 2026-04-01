@@ -13,24 +13,30 @@ import org.slf4j.LoggerFactory;
 public class ClientChannelHandler extends ChannelInboundHandlerAdapter {
     static final Logger logger = LoggerFactory.getLogger(ClientChannelHandler.class);
 
-    private IChannelManager channelManager;
+    protected final IChannelManager channelManager;
+
+    protected Ukcp channelUkcp;
 
     public ClientChannelHandler(IChannelManager channelManager) {
         this.channelManager = channelManager;
     }
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("",cause);
-        //SocketAddress socketAddress = ctx.channel().localAddress();
-        //Ukcp ukcp = ukcpMap.get(socketAddress);
-        //ukcp.getKcpListener().handleException(cause,ukcp);
+        if (channelUkcp == null) {
+            logger.error("exceptionCaught", cause);
+        } else {
+            //  如果此异常发生在读取消息之后，会缓存 Ukcp 对象，在已知连接发生异常时尽量将异常信息通知给业务层
+            channelUkcp.getiMessageExecutor().execute(() -> channelUkcp.getKcpListener().handleException(cause, channelUkcp));
+        }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object object) {
         DatagramPacket msg = (DatagramPacket) object;
         Ukcp ukcp = this.channelManager.get(msg);
-        if(ukcp!=null){
+        channelUkcp = ukcp;
+        if (ukcp != null) {
             ukcp.read(msg.content());
         }
     }

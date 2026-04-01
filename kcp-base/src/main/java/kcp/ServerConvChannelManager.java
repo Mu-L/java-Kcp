@@ -15,13 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ServerConvChannelManager implements IChannelManager {
 
-    private int convIndex;
+    private final int convIndex;
 
     public ServerConvChannelManager(int convIndex) {
         this.convIndex = convIndex;
     }
 
-    private Map<Integer, Ukcp> ukcpMap = new ConcurrentHashMap<>();
+    private final Map<Integer, Ukcp> ukcpMap = new ConcurrentHashMap<>();
 
     @Override
     public Ukcp get(DatagramPacket msg) {
@@ -29,14 +29,13 @@ public class ServerConvChannelManager implements IChannelManager {
         return ukcpMap.get(conv);
     }
 
-
     private int getConv(DatagramPacket msg) {
         ByteBuf byteBuf = msg.content();
         return byteBuf.getIntLE(byteBuf.readerIndex() + convIndex);
     }
 
     @Override
-    public void New(SocketAddress socketAddress, Ukcp ukcp, DatagramPacket msg) {
+    public void add(SocketAddress socketAddress, Ukcp ukcp, DatagramPacket msg) {
         int conv = ukcp.getConv();
         if (msg != null) {
             conv = getConv(msg);

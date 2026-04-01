@@ -7,7 +7,8 @@ package threadPool;
 public interface IMessageExecutorPool {
     /**
      * 从线程池中按算法获得一个线程对象
-     * @return
+     *
+     * @return {@link IMessageExecutor}
      */
     IMessageExecutor getIMessageExecutor();
 

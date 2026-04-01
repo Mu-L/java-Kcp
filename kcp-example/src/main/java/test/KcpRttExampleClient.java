@@ -4,10 +4,7 @@ import com.backblaze.erasure.FecAdapt;
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import kcp.ChannelConfig;
-import kcp.KcpClient;
-import kcp.KcpListener;
-import kcp.Ukcp;
+import kcp.*;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.*;
@@ -46,23 +43,23 @@ public class KcpRttExampleClient implements KcpListener {
     }
 
     public static void main(String[] args) {
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(512);
-        channelConfig.setRcvwnd(512);
-        channelConfig.setMtu(512);
-        channelConfig.setAckNoDelay(true);
-        channelConfig.setConv(55);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(512);
+        kcpConfig.setRcvwnd(512);
+        kcpConfig.setMtu(512);
+        kcpConfig.setAckNoDelay(true);
+        kcpConfig.setConv(55);
 
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setFecAdapt(new FecAdapt(3,1));
         channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
         //channelConfig.setAckMaskSize(32);
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         KcpRttExampleClient kcpClientRttExample = new KcpRttExampleClient();
-        kcpClient.connect(new InetSocketAddress("127.0.0.1",20003),channelConfig,kcpClientRttExample);
+        kcpClient.connect(new InetSocketAddress("127.0.0.1",20003),kcpClientRttExample);
 
         //kcpClient.connect(new InetSocketAddress("10.60.100.191",20003),channelConfig,kcpClientRttExample);
     }

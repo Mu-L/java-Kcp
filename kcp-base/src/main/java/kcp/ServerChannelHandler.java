@@ -1,17 +1,12 @@
 package kcp;
 
-import com.backblaze.erasure.ReedSolomon;
 import com.backblaze.erasure.fec.Fec;
-import com.backblaze.erasure.fecNative.ReedSolomonNative;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.util.HashedWheelTimer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.util.Timer;
 import threadPool.IMessageExecutor;
-import threadPool.IMessageExecutorPool;
 
 import java.util.concurrent.TimeUnit;
 
@@ -20,44 +15,37 @@ import java.util.concurrent.TimeUnit;
  * 2018/9/20.
  */
 public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
-    static final Logger logger = LoggerFactory.getLogger(ServerChannelHandler.class);
 
-    private IChannelManager channelManager;
+    protected final IChannelManager channelManager;
+    protected final ChannelConfig channelConfig;
+    protected final KcpListener kcpListener;
+    protected final Timer timer;
 
-    private ChannelConfig channelConfig;
+    protected Ukcp channelUkcp;
 
-    private IMessageExecutorPool iMessageExecutorPool;
-
-    private KcpListener kcpListener;
-
-    private HashedWheelTimer hashedWheelTimer;
-
-    public ServerChannelHandler(IChannelManager channelManager, ChannelConfig channelConfig, IMessageExecutorPool iMessageExecutorPool, KcpListener kcpListener,HashedWheelTimer hashedWheelTimer) {
+    public ServerChannelHandler(IChannelManager channelManager, ChannelConfig channelConfig, KcpListener kcpListener, Timer timer) {
         this.channelManager = channelManager;
         this.channelConfig = channelConfig;
-        this.iMessageExecutorPool = iMessageExecutorPool;
         this.kcpListener = kcpListener;
-        this.hashedWheelTimer = hashedWheelTimer;
+        this.timer = timer;
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("", cause);
-        //SocketAddress socketAddress = ctx.channel().remoteAddress();
-        //Ukcp ukcp = clientMap.get(socketAddress);
-        //if(ukcp==null){
-        //    logger.error("exceptionCaught ukcp is not exist address"+ctx.channel().remoteAddress(),cause);
-        //    return;
-        //}
-        //ukcp.getKcpListener().handleException(cause,ukcp);
+        if (channelUkcp == null) {
+            kcpListener.handleException(cause, null);
+        } else {
+            //  如果此异常发生在读取消息之后，会缓存 Ukcp 对象，在已知连接发生异常时尽量将异常信息通知给业务层
+            channelUkcp.getiMessageExecutor().execute(() -> kcpListener.handleException(cause, channelUkcp));
+        }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object object) {
-        final ChannelConfig channelConfig = this.channelConfig;
         DatagramPacket msg = (DatagramPacket) object;
         Ukcp ukcp = channelManager.get(msg);
         ByteBuf byteBuf = msg.content();
+        channelUkcp = ukcp;
 
         if (ukcp != null) {
             User user = ukcp.user();
@@ -68,20 +56,19 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
         }
 
         //如果是新连接第一个包的sn必须为0
-        int sn = getSn(byteBuf,channelConfig);
-        if(sn!=0){
+        int sn = getSn(byteBuf, channelConfig);
+        if (sn != 0) {
             msg.release();
             return;
         }
-        IMessageExecutor iMessageExecutor = iMessageExecutorPool.getIMessageExecutor();
+        IMessageExecutor executor = channelConfig.getMessageExecutorPool().getIMessageExecutor();
         KcpOutput kcpOutput = new KcpOutPutImp();
-        Ukcp newUkcp = new Ukcp(kcpOutput, kcpListener, iMessageExecutor, channelConfig, channelManager);
+        Ukcp newUkcp = new Ukcp(kcpOutput, kcpListener, executor, channelConfig, channelManager);
 
-        User user = new User(ctx.channel(), msg.sender(), msg.recipient());
-        newUkcp.user(user);
-        channelManager.New(msg.sender(), newUkcp, msg);
+        newUkcp.user(new User(ctx.channel(), msg.sender(), msg.recipient()));
+        channelManager.add(msg.sender(), newUkcp, msg);
 
-        iMessageExecutor.execute(() -> {
+        executor.execute(() -> {
             try {
                 newUkcp.getKcpListener().onConnected(newUkcp);
             } catch (Throwable throwable) {
@@ -91,19 +78,17 @@ public class ServerChannelHandler extends ChannelInboundHandlerAdapter {
 
         newUkcp.read(byteBuf);
 
-        ScheduleTask scheduleTask = new ScheduleTask(iMessageExecutor, newUkcp,hashedWheelTimer);
-        hashedWheelTimer.newTimeout(scheduleTask,newUkcp.getInterval(), TimeUnit.MILLISECONDS);
+        ScheduleTask scheduleTask = new ScheduleTask(executor, newUkcp, timer);
+        timer.newTimeout(scheduleTask, newUkcp.getInterval(), TimeUnit.MILLISECONDS);
     }
 
-
-    private int getSn(ByteBuf byteBuf,ChannelConfig channelConfig){
+    protected int getSn(ByteBuf byteBuf, ChannelConfig channelConfig) {
         int headerSize = 0;
-        if(channelConfig.getFecAdapt()!=null){
-            headerSize+= Fec.fecHeaderSizePlus2;
+        if (channelConfig.getFecAdapt() != null) {
+            headerSize += Fec.fecHeaderSizePlus2;
         }
 
-        int sn = byteBuf.getIntLE(byteBuf.readerIndex()+Kcp.IKCP_SN_OFFSET+headerSize);
-        return sn;
+        return byteBuf.getIntLE(byteBuf.readerIndex() + Kcp.IKCP_SN_OFFSET + headerSize);
     }
 
 }

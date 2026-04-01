@@ -2,10 +2,7 @@ package test;
 
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 import threadPool.disruptor.DisruptorExecutorPool;
 
 /**
@@ -17,20 +14,25 @@ public class SpeedExampleServer implements KcpListener {
     public static void main(String[] args) {
 
         SpeedExampleServer speedExampleServer = new SpeedExampleServer();
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,30,2,true);
-        channelConfig.setSndwnd(2048);
-        channelConfig.setRcvwnd(2048);
-        channelConfig.setMtu(1400);
-        channelConfig.setiMessageExecutorPool(new DisruptorExecutorPool(Runtime.getRuntime().availableProcessors()/2));
+
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,30,2,true);
+        kcpConfig.setSndwnd(2048);
+        kcpConfig.setRcvwnd(2048);
+        kcpConfig.setMtu(1400);
+        kcpConfig.setAckNoDelay(true);
+
+        DisruptorExecutorPool executorPool = new DisruptorExecutorPool(Runtime.getRuntime().availableProcessors() / 2);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig, executorPool);
+
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
-        channelConfig.setAckNoDelay(true);
         channelConfig.setTimeoutMillis(5000);
         channelConfig.setUseConvChannel(true);
         channelConfig.setCrc32Check(false);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(speedExampleServer,channelConfig,20004);
+
+        KcpServer.createStarted(channelConfig, speedExampleServer, 20004);
     }
 
     long start = System.currentTimeMillis();

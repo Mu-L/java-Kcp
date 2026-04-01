@@ -12,7 +12,6 @@ public class DisruptorThread  extends Thread{
      */
     private IMessageExecutor messageExecutor;
 
-
     public DisruptorThread(IMessageExecutor messageExecutor) {
         this.messageExecutor = messageExecutor;
     }

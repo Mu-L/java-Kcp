@@ -5,10 +5,7 @@ import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 import threadPool.disruptor.DisruptorExecutorPool;
 import threadPool.disruptor.DisruptorSingleExecutor;
 import threadPool.netty.NettyMessageExecutor;
@@ -24,18 +21,20 @@ public class KcpPingPongExampleServer implements KcpListener {
     public static void main(String[] args) {
 
         KcpPingPongExampleServer kcpRttExampleServer = new KcpPingPongExampleServer();
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
         //channelConfig.setiMessageExecutorPool(new DisruptorExecutorPool(Runtime.getRuntime().availableProcessors()));
         //channelConfig.setFecAdapt(new FecAdapt(10,3));
-        channelConfig.setAckNoDelay(false);
+        kcpConfig.setAckNoDelay(false);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         //channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpRttExampleServer, channelConfig, 10001);
+
+        KcpServer.createStarted(channelConfig, kcpRttExampleServer, 10001);
     }
 
 

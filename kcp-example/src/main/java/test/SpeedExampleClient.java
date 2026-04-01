@@ -3,10 +3,7 @@ package test;
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import kcp.ChannelConfig;
-import kcp.KcpClient;
-import kcp.KcpListener;
-import kcp.Ukcp;
+import kcp.*;
 import threadPool.disruptor.DisruptorExecutorPool;
 
 import java.net.InetSocketAddress;
@@ -22,23 +19,26 @@ public class SpeedExampleClient implements KcpListener {
     }
 
     public static void main(String[] args) {
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,30,2,true);
-        channelConfig.setSndwnd(2048);
-        channelConfig.setRcvwnd(2048);
-        channelConfig.setMtu(1400);
-        channelConfig.setAckNoDelay(true);
-        channelConfig.setConv(55);
-        channelConfig.setiMessageExecutorPool(new DisruptorExecutorPool(Runtime.getRuntime().availableProcessors()/2));
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,30,2,true);
+        kcpConfig.setSndwnd(2048);
+        kcpConfig.setRcvwnd(2048);
+        kcpConfig.setMtu(1400);
+        kcpConfig.setAckNoDelay(true);
+        kcpConfig.setConv(55);
+
+        DisruptorExecutorPool executorPool = new DisruptorExecutorPool(Runtime.getRuntime().availableProcessors() / 2);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig, executorPool);
+
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
         channelConfig.setCrc32Check(false);
-        channelConfig.setWriteBufferSize(channelConfig.getMtu()*300000);
-        KcpClient kcpClient = new KcpClient();
-        kcpClient.init(channelConfig);
+        channelConfig.setWriteBufferSize(kcpConfig.getMtu()*300000);
+        KcpClient kcpClient = new KcpClient(channelConfig);
 
         SpeedExampleClient speedExampleClient = new SpeedExampleClient();
-        kcpClient.connect(new InetSocketAddress("127.0.0.1",20004),channelConfig,speedExampleClient);
+        kcpClient.connect(new InetSocketAddress("127.0.0.1",20004),speedExampleClient);
 
     }
     private static final int messageSize = 2048;

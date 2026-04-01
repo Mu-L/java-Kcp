@@ -3,10 +3,7 @@ package test;
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import kcp.ChannelConfig;
-import kcp.KcpClient;
-import kcp.KcpListener;
-import kcp.Ukcp;
+import kcp.*;
 
 import java.net.InetSocketAddress;
 
@@ -30,25 +27,27 @@ public class KcpLockStepSynchronizationClient implements KcpListener
             number = Integer.parseInt(args[1]);
         }
 
-        KcpClient kcpClient = new KcpClient();
 
 
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(300);
-        channelConfig.setRcvwnd(300);
-        channelConfig.setMtu(500);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(300);
+        kcpConfig.setRcvwnd(300);
+        kcpConfig.setMtu(500);
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
-        channelConfig.setAckNoDelay(false);
+        kcpConfig.setAckNoDelay(false);
+
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
 
-        kcpClient.init(channelConfig);
+        KcpClient kcpClient = new KcpClient(channelConfig);
         KcpLockStepSynchronizationClient lockStepSynchronizationClient = new KcpLockStepSynchronizationClient();
 
         for (int i = 0; i < number; i++) {
-            kcpClient.connect(new InetSocketAddress(ip, 10009), channelConfig, lockStepSynchronizationClient);
+            kcpClient.connect(new InetSocketAddress(ip, 10009),  lockStepSynchronizationClient);
         }
 
         TimerThreadPool.scheduleWithFixedDelay(() -> {

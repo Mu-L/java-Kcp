@@ -3,10 +3,7 @@ package test;
 import com.backblaze.erasure.FecAdapt;
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 
 /**
  * 测试延迟的例子
@@ -19,18 +16,21 @@ public class KcpRttExampleServer implements KcpListener {
 
         KcpRttExampleServer kcpRttExampleServer = new KcpRttExampleServer();
 
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(512);
-        channelConfig.setRcvwnd(512);
-        channelConfig.setMtu(512);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(512);
+        kcpConfig.setRcvwnd(512);
+        kcpConfig.setMtu(512);
+        kcpConfig.setAckNoDelay(true);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
+
         channelConfig.setFecAdapt(new FecAdapt(3,1));
-        channelConfig.setAckNoDelay(true);
         channelConfig.setTimeoutMillis(10000);
         channelConfig.setUseConvChannel(true);
         channelConfig.setCrc32Check(true);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpRttExampleServer,channelConfig,20003);
+
+        KcpServer.createStarted(channelConfig, kcpRttExampleServer, 20003);
     }
 
 

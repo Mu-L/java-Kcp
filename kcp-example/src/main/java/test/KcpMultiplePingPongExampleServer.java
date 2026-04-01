@@ -2,10 +2,7 @@ package test;
 
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 
 /**
  * 测试多连接吞吐量
@@ -17,19 +14,21 @@ public class KcpMultiplePingPongExampleServer implements KcpListener {
     public static void main(String[] args) {
 
         KcpMultiplePingPongExampleServer kcpMultiplePingPongExampleServer = new KcpMultiplePingPongExampleServer();
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(256);
-        channelConfig.setRcvwnd(256);
-        channelConfig.setMtu(400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(256);
+        kcpConfig.setRcvwnd(256);
+        kcpConfig.setMtu(400);
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
         //channelConfig.setAckNoDelay(true);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setUseConvChannel(true);
         //channelConfig.setCrc32Check(true);
         channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpMultiplePingPongExampleServer, channelConfig, 10011);
+
+        KcpServer.createStarted(channelConfig, kcpMultiplePingPongExampleServer, 10011);
     }
 
 

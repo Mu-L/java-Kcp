@@ -2,10 +2,7 @@ package test;
 
 import com.backblaze.erasure.fec.Snmp;
 import io.netty.buffer.ByteBuf;
-import kcp.ChannelConfig;
-import kcp.KcpListener;
-import kcp.KcpServer;
-import kcp.Ukcp;
+import kcp.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,18 +16,20 @@ public class KcpIdleExampleServer implements KcpListener {
     public static void main(String[] args) {
 
         KcpIdleExampleServer kcpIdleExampleServer = new KcpIdleExampleServer();
-        ChannelConfig channelConfig = new ChannelConfig();
-        channelConfig.nodelay(true,40,2,true);
-        channelConfig.setSndwnd(1024);
-        channelConfig.setRcvwnd(1024);
-        channelConfig.setMtu(1400);
+        KcpConfig kcpConfig = new KcpConfig();
+        kcpConfig.nodelay(true,40,2,true);
+        kcpConfig.setSndwnd(1024);
+        kcpConfig.setRcvwnd(1024);
+        kcpConfig.setMtu(1400);
+        kcpConfig.setAckNoDelay(false);
+
         //channelConfig.setFecDataShardCount(10);
         //channelConfig.setFecParityShardCount(3);
-        channelConfig.setAckNoDelay(false);
+
+        ChannelConfig channelConfig = new ChannelConfig(kcpConfig);
         channelConfig.setCrc32Check(true);
         //channelConfig.setTimeoutMillis(10000);
-        KcpServer kcpServer = new KcpServer();
-        kcpServer.init(kcpIdleExampleServer, channelConfig, 10020);
+        KcpServer.createStarted(channelConfig, kcpIdleExampleServer, 10020);
     }
 
     private AtomicInteger atomicInteger = new AtomicInteger();
