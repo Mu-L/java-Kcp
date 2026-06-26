@@ -1,12 +1,12 @@
 package com.backblaze.erasure.fec;
 
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 /**
  * Created by JinMiao
  * 2020/7/2.
  */
-public class MyArrayList<E> extends ArrayList<E> {
+public class MyArrayList<E> extends ObjectArrayList<E> {
 
 
     public MyArrayList() {
@@ -18,6 +18,6 @@ public class MyArrayList<E> extends ArrayList<E> {
     }
 
     public void removeRange(int fromIndex, int toIndex){
-        super.removeRange(fromIndex, toIndex);
+        removeElements(fromIndex, toIndex);
     }
 }
