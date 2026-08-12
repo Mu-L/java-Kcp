@@ -153,11 +153,20 @@ public class Ukcp {
             if (fecPacket.getFlag() == Fec.typeData || fecPacket.getFlag() == Fec.typeParity) {
                 List<ByteBuf> byteBufs = fecDecode.decode(fecPacket);
                 if (byteBufs != null) {
-                    ByteBuf byteBuf;
-                    for (ByteBuf buf : byteBufs) {
-                        byteBuf = buf;
-                        input(byteBuf, false, current);
-                        byteBuf.release();
+                    int index = 0;
+                    try {
+                        while (index < byteBufs.size()) {
+                            ByteBuf byteBuf = byteBufs.get(index++);
+                            try {
+                                input(byteBuf, false, current);
+                            } finally {
+                                byteBuf.release();
+                            }
+                        }
+                    } finally {
+                        while (index < byteBufs.size()) {
+                            byteBufs.get(index++).release();
+                        }
                     }
                 }
             }

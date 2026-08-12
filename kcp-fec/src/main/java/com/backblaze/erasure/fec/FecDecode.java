@@ -168,69 +168,60 @@ public class FecDecode implements IFecDecode {
                 freeRange(first, numshard, rx);
             }
             else if(numshard>=dataShards){
-                for (int i = 0; i < shards.length; i++) {
-                    ByteBuf shard  = shards[i];
-                    //如果数据不存在 用0填充起来
-                    if(shard==null){
-                        shards[i] = zeros.copy(0,maxlen);
-                        shards[i].writerIndex(maxlen);
-                        continue;
-                    }
-                    int left = maxlen-shard.readableBytes();
-                    if(left>0){
-                        shard.writeBytes(zeros,left);
-                        zeros.resetReaderIndex();
-                    }
-                }
-                codec.decodeMissing(shards,shardsflag,0,maxlen);
-                result = new ArrayList<>(dataShards);
-                for (int i = 0; i < shardSize; i++) {
-                    if(shardsflag[i]){
-                        continue;
-                    }
-                    ByteBuf byteBufs = shards[i];
-                    //释放构建的parityShards内存
-                    if(i>=dataShards){
-                        byteBufs.release();
-                        continue;
-                    }
-
-                    int packageSize = byteBufs.readShort();
-                    if(byteBufs.readableBytes()<packageSize){
-                        System.out.println("bytebuf长度: "+byteBufs.writerIndex()+" 读出长度"+packageSize);
-                        byte[] bytes = new byte[byteBufs.writerIndex()];
-                        byteBufs.getBytes(0,bytes);
-                        for (byte aByte : bytes) {
-                            System.out.print("["+aByte+"] ");
+                boolean completed = false;
+                try {
+                    for (int i = 0; i < shards.length; i++) {
+                        ByteBuf shard  = shards[i];
+                        //如果数据不存在 用0填充起来
+                        if(shard==null){
+                            shards[i] = zeros.copy(0,maxlen);
+                            shards[i].writerIndex(maxlen);
+                            continue;
                         }
-                        Snmp.snmp.FECErrs.increment();
-                    }else{
+                        int left = maxlen-shard.readableBytes();
+                        if(left>0){
+                            shard.writeBytes(zeros,left);
+                            zeros.resetReaderIndex();
+                        }
+                    }
+                    codec.decodeMissing(shards,shardsflag,0,maxlen);
+                    result = new ArrayList<>(dataShards);
+                    for (int i = 0; i < shardSize; i++) {
+                        if(shardsflag[i]){
+                            continue;
+                        }
+                        ByteBuf byteBufs = shards[i];
+                        //释放构建的parityShards内存
+                        if(i>=dataShards){
+                            byteBufs.release();
+                            shards[i] = null;
+                            continue;
+                        }
+
+                        int packageSize = byteBufs.readShort();
+                        if(byteBufs.readableBytes()<packageSize){
+                            System.out.println("bytebuf长度: "+byteBufs.writerIndex()+" 读出长度"+packageSize);
+                            byte[] bytes = new byte[byteBufs.writerIndex()];
+                            byteBufs.getBytes(0,bytes);
+                            for (byte aByte : bytes) {
+                                System.out.print("["+aByte+"] ");
+                            }
+                            Snmp.snmp.FECErrs.increment();
+                        }else{
+                            Snmp.snmp.FECRecovered.increment();
+                        }
+                        //去除fec头标记的消息体长度2字段
+                        byteBufs = byteBufs.slice(Fec.fecDataSize,packageSize);
+                        result.add(byteBufs);
                         Snmp.snmp.FECRecovered.increment();
                     }
-                    //去除fec头标记的消息体长度2字段
-                    byteBufs = byteBufs.slice(Fec.fecDataSize,packageSize);
-                    //int packageSize =byteBufs.readUnsignedShort();
-                    //byteBufs = byteBufs.slice(0,packageSize);
-                    result.add(byteBufs);
-                    Snmp.snmp.FECRecovered.increment();
-                    //int packageSize =byteBufs.getUnsignedShort(0);
-                    ////判断长度
-                    //if(byteBufs.writerIndex()-Fec.fecHeaderSizePlus2>=packageSize&&packageSize>0)
-                    //{
-                    //    byteBufs = byteBufs.slice(Fec.fecHeaderSizePlus2,packageSize);
-                    //    result.add(byteBufs);
-                    //    Snmp.snmp.FECRecovered.incrementAndGet();
-                    //}else{
-                    //    System.out.println("bytebuf长度: "+byteBufs.writerIndex()+" 读出长度"+packageSize);
-                    //    byte[] bytes = new byte[byteBufs.writerIndex()];
-                    //    byteBufs.getBytes(0,bytes);
-                    //    for (byte aByte : bytes) {
-                    //        System.out.print("["+aByte+"] ");
-                    //    }
-                    //    Snmp.snmp.FECErrs.incrementAndGet();
-                    //}
+                    freeRange(first, numshard, rx);
+                    completed = true;
+                } finally {
+                    if (!completed) {
+                        releaseMissingShards(shards, shardsflag);
+                    }
                 }
-                freeRange(first, numshard, rx);
             }
         }
         if(rx.size()>rxlimit){
@@ -246,18 +237,28 @@ public class FecDecode implements IFecDecode {
 
 
     public void release(){
+        MyArrayList<FecPacket> rx = this.rx;
+        this.rx = null;
+        if (rx != null) {
+            for (FecPacket fecPacket : rx) {
+                if(fecPacket!=null) {
+                    fecPacket.release();
+                }
+            }
+            rx.clear();
+        }
+        ByteBuf zeros = this.zeros;
+        this.zeros = null;
+        if (zeros != null) {
+            zeros.release();
+        }
         this.rxlimit = 0;
         this.dataShards=0;
         this.parityShards=0;
         this.shardSize=0;
-        for (FecPacket fecPacket : this.rx) {
-            if(fecPacket==null) {
-                continue;
-            }
-            fecPacket.release();
-        }
-        this.zeros.release();
         codec=null;
+        decodeCache = null;
+        flagCache = null;
     }
 
     /**
@@ -290,6 +291,15 @@ public class FecDecode implements IFecDecode {
         //for (int i = 0; i < n; i++) {
         //    q.remove(q.size()-1);
         //}
+    }
+
+    private static void releaseMissingShards(ByteBuf[] shards, boolean[] shardsflag) {
+        for (int i = 0; i < shards.length; i++) {
+            if (!shardsflag[i] && shards[i] != null) {
+                shards[i].release();
+                shards[i] = null;
+            }
+        }
     }
 
 

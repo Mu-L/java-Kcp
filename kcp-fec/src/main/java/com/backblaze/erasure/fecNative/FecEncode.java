@@ -143,6 +143,10 @@ public class FecEncode implements IFecEncode {
             shardCache[i].release();
             shardCache[i]=null;
         }
+        // Parity buffers are owned by the caller after encode returns.
+        for (int i = 0; i < parityShards; i++) {
+            shardCache[dataShards + i] = null;
+        }
         this.shardCount = 0;
         this.maxSize = 0;
         return encodeCache;
@@ -151,6 +155,21 @@ public class FecEncode implements IFecEncode {
 
 
     public void release(){
+        ByteBuf[] shardCache = this.shardCache;
+        this.shardCache = null;
+        ByteBuf zeros = this.zeros;
+        this.zeros = null;
+        if (shardCache != null) {
+            for (ByteBuf byteBuf : shardCache) {
+                if (byteBuf != null) {
+                    byteBuf.release();
+                }
+            }
+        }
+        if (zeros != null) {
+            zeros.release();
+        }
+        this.codec = null;
         this.dataShards=0;
         this.parityShards=0;
         this.shardSize=0;
@@ -160,15 +179,7 @@ public class FecEncode implements IFecEncode {
         this.maxSize=0;
         this.headerOffset=0;
         this.payloadOffset=0;
-        ByteBuf byteBuf = null;
-        for (int i = 0; i < dataShards; i++) {
-            byteBuf = this.shardCache[i];
-            if(byteBuf!=null) {
-                byteBuf.release();
-            }
-        }
-        zeros.release();
-        codec=null;
+        this.encodeCache = null;
     }
 
     public static void main(String[] args) {
